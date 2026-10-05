@@ -1,0 +1,13 @@
+-- Add these two lines to ~/.config/hypr/bindings.lua on your Omarchy box.
+--
+-- NOTE: Hyprland reads an uppercase key as "Shift + that key" to produce
+-- the capital character. Two binds that both use capital "H" collide on
+-- the exact same combo (SUPER+SHIFT+h) even though they look different
+-- in the file. Use lowercase letters and add SHIFT explicitly when you
+-- mean it, like the second line below.
+
+-- Voxtype's own dictation: speak, it types into whatever's focused.
+o.bind("SUPER + h", "Dictate into focused window", "voxtype record toggle")
+
+-- This project: speak, it goes to Hermes and speaks the reply back.
+o.bind("SUPER + SHIFT + h", "Speak to Hermes", "~/.local/bin/speak-to-hermes.sh")
