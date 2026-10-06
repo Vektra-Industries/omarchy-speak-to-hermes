@@ -30,6 +30,25 @@ if command -v voxtype >/dev/null 2>&1; then
   fi
 fi
 
+if [ -d "$HOME/.config/omarchy/plugins" ] || command -v omarchy-shell >/dev/null 2>&1; then
+  echo
+  read -rp "Install the Hermes Voice top-bar widget (pick the reply voice, click to cycle)? [Y/n] " BAR_ANSWER
+  if [ "${BAR_ANSWER:-Y}" != "n" ] && [ "${BAR_ANSWER:-Y}" != "N" ]; then
+    mkdir -p "$HOME/.config/omarchy/plugins/speak-to-hermes.voice"
+    cp "$HERE/omarchy-bar-widget/manifest.json" "$HERE/omarchy-bar-widget/Widget.qml" \
+      "$HOME/.config/omarchy/plugins/speak-to-hermes.voice/"
+    if command -v omarchy-shell >/dev/null 2>&1; then
+      omarchy-shell shell rescanPlugins >/dev/null 2>&1 || true
+      omarchy-shell shell enablePlugin speak-to-hermes.voice true >/dev/null 2>&1 || true
+      echo "Installed and enabled -- look for it in the top bar. If it's not"
+      echo "there yet: omarchy-shell shell reloadConfig"
+    else
+      echo "Copied the plugin. Run 'omarchy-shell shell rescanPlugins' then"
+      echo "'omarchy-shell shell enablePlugin speak-to-hermes.voice true' to turn it on."
+    fi
+  fi
+fi
+
 echo
 echo "Next steps:"
 echo "  1. Run install-relay.sh on your Hermes host -- it prints a token and a URL"

@@ -60,6 +60,18 @@ renders exactly like stock `aegis-hud`. See `osd/hermes-voice/README.md`.
 `install.sh` offers to set this up; it's entirely optional — the hotkey
 works fine with just desktop notifications if you skip it.
 
+## Top-bar voice picker
+
+Voxtype has no voice/TTS concept at all (it only does speech-to-text), so
+there's nowhere inside Voxtype's own config to choose which voice
+`speak-to-hermes.sh` replies with. `omarchy-bar-widget/` is a small
+Omarchy Quickshell bar-widget plugin that fills that specific gap: it
+shows the current voice in the top bar, left-click cycles through a
+short list of edge-tts voices, right-click resets to the default. It
+writes its choice to `~/.config/speak-to-hermes/voice`, which
+`speak-to-hermes.sh` reads (a one-off `HERMES_VOICE` env var still wins
+if set). `install.sh` offers to install and enable it.
+
 ## Transcript — see what was said, which model answered, how long it took
 
 `bin/speak-to-hermes-transcript.py` is a small GTK4 window, toggled with
@@ -78,7 +90,7 @@ model handled which turn if you switch around.
 need on the laptop):
 
 ```bash
-git clone <this repo>
+git clone https://github.com/Vektra-Industries/omarchy-speak-to-hermes.git
 cd omarchy-speak-to-hermes
 ./install-relay.sh
 ```
@@ -90,7 +102,7 @@ IP to bind to (your tailscale0 IP, or another private interface — **never
 **On the Omarchy laptop** (the Voxtype side):
 
 ```bash
-git clone <this repo>
+git clone https://github.com/Vektra-Industries/omarchy-speak-to-hermes.git
 cd omarchy-speak-to-hermes
 ./install.sh
 ```

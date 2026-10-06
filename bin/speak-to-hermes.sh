@@ -32,7 +32,10 @@ CONFIG="$HOME/.config/speak-to-hermes/config.sh"
 
 HERMES_RELAY_URL="${HERMES_RELAY_URL:?set HERMES_RELAY_URL, e.g. http://100.x.x.x:47113/speak}"
 HERMES_TOKEN_FILE="${HERMES_TOKEN_FILE:-$HOME/.config/speak-to-hermes/token}"
-HERMES_VOICE="${HERMES_VOICE:-en-US-AvaNeural}"
+# The top-bar voice-picker widget (omarchy-bar-widget/) writes its choice
+# here; an explicit HERMES_VOICE env var still wins over it.
+VOICE_FILE="$HOME/.config/speak-to-hermes/voice"
+HERMES_VOICE="${HERMES_VOICE:-$( [ -s "$VOICE_FILE" ] && cat "$VOICE_FILE" || echo en-US-AvaNeural )}"
 
 PIDFILE="/tmp/speak-to-hermes-record.pid"
 WAVFILE="/tmp/speak-to-hermes-capture.wav"

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "speak-to-hermes.voice",
+  "name": "Hermes Voice",
+  "version": "1.0.0",
+  "author": "omarchy-speak-to-hermes",
+  "description": "Pick the TTS voice speak-to-hermes.sh replies with",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" },
+  "barWidget": {
+    "displayName": "Hermes Voice",
+    "description": "Click to cycle the speak-to-hermes reply voice, right-click to reset to the default",
+    "category": "Info",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
