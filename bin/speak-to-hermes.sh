@@ -2,8 +2,8 @@
 # speak-to-hermes.sh — a second dictation mode for Omarchy's built-in
 # Voxtype, sitting right next to the normal "type into the focused
 # window" hotkey. Instead of pasting, it ships your words to a Hermes
-# agent (https://hermes-agent.nousresearch.com) over SSH and speaks the
-# reply back.
+# agent (https://hermes-agent.nousresearch.com) over HTTP and speaks
+# the reply back.
 #
 # Toggle: first press starts recording, second press stops, transcribes,
 # sends, and speaks the reply.
@@ -15,9 +15,8 @@ set -uo pipefail
 CONFIG="$HOME/.config/speak-to-hermes/config.sh"
 [ -f "$CONFIG" ] && source "$CONFIG"
 
-HERMES_SSH_HOST="${HERMES_SSH_HOST:?set HERMES_SSH_HOST, e.g. user@100.x.x.x (Tailscale) or user@your.host}"
-HERMES_SSH_KEY="${HERMES_SSH_KEY:-$HOME/.ssh/speak_to_hermes}"
-HERMES_RELAY_PATH="${HERMES_RELAY_PATH:-/usr/local/bin/hermes-speak-relay.sh}"
+HERMES_RELAY_URL="${HERMES_RELAY_URL:?set HERMES_RELAY_URL, e.g. http://100.x.x.x:47113/speak}"
+HERMES_TOKEN_FILE="${HERMES_TOKEN_FILE:-$HOME/.config/speak-to-hermes/token}"
 HERMES_VOICE="${HERMES_VOICE:-en-US-AvaNeural}"
 
 PIDFILE="/tmp/speak-to-hermes-record.pid"
@@ -59,13 +58,25 @@ if [ -z "$TEXT" ]; then
 fi
 notify "You said" "$TEXT"
 
-REPLY="$(printf '%s' "$TEXT" | ssh -o BatchMode=yes -o ConnectTimeout=8 -o IdentitiesOnly=yes \
-  -i "$HERMES_SSH_KEY" "$HERMES_SSH_HOST" "$HERMES_RELAY_PATH" 2>/tmp/speak-to-hermes-ssh.err)"
+TOKEN="$(cat "$HERMES_TOKEN_FILE" 2>/dev/null)"
+PAYLOAD="$(python3 -c 'import json,sys; print(json.dumps({"text": sys.argv[1]}))' "$TEXT")"
+RESP="$(curl -sf -m 60 -X POST "$HERMES_RELAY_URL" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d "$PAYLOAD" 2>/tmp/speak-to-hermes-http.err)"
 
-if [ -z "$REPLY" ]; then
-  notify "Hermes" "Couldn't reach Hermes. See /tmp/speak-to-hermes-ssh.err"
+if [ -z "$RESP" ]; then
+  notify "Hermes" "Couldn't reach the relay. See /tmp/speak-to-hermes-http.err"
   exit 0
 fi
+
+REPLY="$(printf '%s' "$RESP" | python3 -c '
+import json, sys
+try:
+    print(json.load(sys.stdin).get("reply", "") or "")
+except Exception:
+    print("")
+')"
+[ -z "$REPLY" ] && REPLY="(no reply text)"
 notify "Hermes" "$REPLY"
 
 PATH="$HOME/.local/bin:$PATH"

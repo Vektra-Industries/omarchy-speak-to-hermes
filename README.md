@@ -23,7 +23,8 @@ Tailscale.
  voxtype transcribe   ← Voxtype's own local Whisper, reused — no second STT
         │
         ▼
- ssh → hermes-speak-relay.sh  (runs on the Hermes host)
+ HTTPS/HTTP POST /speak  →  hermes-speak-relay.py  (runs on the Hermes host,
+        │   bearer token          bound to your tailscale/private IP only)
         │                          │
         │                          ▼
         │                    hermes chat -Q  (one real agent turn,
@@ -38,6 +39,19 @@ The only new code is the handoff in between.
 
 ## Install
 
+**On the Hermes host** (run this first — it prints a token and a URL you'll
+need on the laptop):
+
+```bash
+git clone <this repo>
+cd omarchy-speak-to-hermes
+./install-relay.sh
+```
+
+No root needed — it's a `systemd --user` unit. It'll ask for the interface
+IP to bind to (your tailscale0 IP, or another private interface — **never
+0.0.0.0**, see "Security model").
+
 **On the Omarchy laptop** (the Voxtype side):
 
 ```bash
@@ -47,8 +61,10 @@ cd omarchy-speak-to-hermes
 ```
 
 Then:
-1. `ssh-keygen -t ed25519 -N "" -f ~/.ssh/speak_to_hermes`
-2. Edit `~/.config/speak-to-hermes/config.sh` — set `HERMES_SSH_HOST`
+1. Put the relay's URL in `~/.config/speak-to-hermes/config.sh` as
+   `HERMES_RELAY_URL`
+2. Put the token `install-relay.sh` printed into
+   `~/.config/speak-to-hermes/token` (mode 600)
 3. Add the two lines from `hypr/bindings.lua.snippet` to
    `~/.config/hypr/bindings.lua`
 4. `hyprctl reload` — if that doesn't pick up new binds, Omarchy's Lua
@@ -58,53 +74,41 @@ Then:
    for a robotic fallback. Without either, you still get the text in a
    desktop notification.
 
-**On the Hermes host:**
-
-```bash
-./install-relay.sh
-```
-
-Then add the laptop's `~/.ssh/speak_to_hermes.pub` to that account's
-`~/.ssh/authorized_keys` — **read "Security model" below first.**
-
 ## Security model — read this before you trust it
 
-This project's safety depends entirely on how the two machines reach each
-other, not on anything in these scripts. Be honest with yourself about
-which situation you're in:
+This started life as an SSH-based relay with a `command="..."` restriction
+in `authorized_keys`. **That approach silently did nothing** on a tailnet
+with Tailscale SSH enabled: Tailscale authenticates the *tailnet peer*, not
+the *SSH key* — a verbose `ssh -v` log shows `Authenticated ... using
+"none"`, meaning OpenSSH's own key-checking step never ran, so whatever
+Tailscale's ACL grants that peer (commonly a normal login) is what you get
+regardless of which key was presented. If you're building something SSH-based
+on a tailnet, check for that line before trusting any `authorized_keys`
+restriction.
 
-- **Plain SSH, normal network.** A `command="..."` restriction in
-  `authorized_keys` works as expected: that key can run
-  `hermes-speak-relay.sh` and nothing else, confirmed by checking the
-  `allow:` header on a rejected method and testing a raw command gets
-  refused.
-- **Tailscale SSH enabled on the Hermes host.** We built this on exactly
-  that setup, and found out the hard way: Tailscale SSH authenticates the
-  *tailnet peer*, not the *SSH key* — a verbose connection log will show
-  `Authenticated ... using "none"`. Once that happens, **every
-  `authorized_keys` restriction on that key is silently irrelevant**,
-  because OpenSSH's own key-checking step never ran. Whatever Tailscale's
-  ACL policy grants that peer (commonly: a normal login as the target
-  user) is what you get, regardless of which key was presented.
-  - If you're on this setup, treat it as: *the laptop has the same trust
-    level as any other device on your tailnet already has to that
-    account* — which is probably fine between two devices you own, and
-    not something to rely on as an additional restriction.
-  - To actually restrict it under Tailscale SSH, you need either a
-    dedicated Tailscale ACL grant that maps this connection to a separate,
-    unprivileged local account whose login shell *is*
-    `hermes-speak-relay.sh` (so there's no shell to escape to, independent
-    of which auth method ran), or you disable Tailscale SSH for this
-    specific path and fall back to plain SSH's own key checking.
+This project now uses plain HTTP instead, specifically to sidestep that:
 
-Either way: use a key generated just for this (`speak_to_hermes`), not your
-daily driver key, so revoking it later doesn't touch anything else.
+- **Interface-bound.** The relay binds to one specific IP you choose (your
+  tailscale0 address, or another private interface) — `install-relay.sh`
+  refuses `0.0.0.0`. Nothing outside that network can even open the port.
+- **Bearer token.** A 32-byte random token, generated once, required on
+  every request. It lives in two places only: the relay's
+  `~/.config/hermes-speak/token` and the laptop's
+  `~/.config/speak-to-hermes/token`, both mode 600.
+- **One verb.** The relay answers exactly one route (`POST /speak`) with
+  exactly one effect (one `hermes chat -Q` turn). There's no shell to
+  escape to, because there isn't a shell in the first place.
+
+Two independent factors — network reachability and token possession — not
+one assumed one. If you're on a LAN instead of Tailscale, run it over
+`https` (put a reverse proxy with TLS in front) rather than bare `http`
+across anything wider than a trusted segment.
 
 ## Files
 
 - `bin/speak-to-hermes.sh` — runs on the laptop, bound to a hotkey
-- `bin/hermes-speak-relay.sh` — runs on the Hermes host, the only thing the
-  laptop is meant to be able to call
+- `bin/hermes-speak-relay.py` — runs on the Hermes host; the only thing the
+  laptop can reach, and the only thing it can do
 - `config.example.sh` — copy to `~/.config/speak-to-hermes/config.sh`
 - `hypr/bindings.lua.snippet` — the two Hyprland bind lines
 - `install.sh`, `install-relay.sh` — one-shot installers for each side

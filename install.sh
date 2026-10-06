@@ -18,8 +18,9 @@ fi
 
 echo
 echo "Next steps:"
-echo "  1. Edit ~/.config/speak-to-hermes/config.sh"
-echo "  2. ssh-keygen -t ed25519 -N '' -f ~/.ssh/speak_to_hermes"
-echo "  3. Put hermes-speak-relay.sh on your Hermes host (see relay/install-relay.sh)"
+echo "  1. Run install-relay.sh on your Hermes host -- it prints a token and a URL"
+echo "  2. Put that token in ~/.config/speak-to-hermes/token (mode 600) on THIS laptop"
+echo "  3. Put that URL in ~/.config/speak-to-hermes/config.sh as HERMES_RELAY_URL"
 echo "  4. Add the two lines from hypr/bindings.lua.snippet to ~/.config/hypr/bindings.lua"
 echo "  5. hyprctl reload (or omarchy-restart-hyprctl if a plain reload doesn't pick it up)"
+echo "  6. pip install --user edge-tts for a real voice, or pacman -S espeak-ng for a robotic one"

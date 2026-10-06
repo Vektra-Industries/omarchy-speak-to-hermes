@@ -1,17 +1,12 @@
 # Copy to ~/.config/speak-to-hermes/config.sh and edit.
 
-# Where your Hermes agent lives. Over Tailscale this is just "user@100.x.x.x".
-# NOTE: if Tailscale SSH is enabled on that host, it authenticates tailnet
-# peers itself and SKIPS normal SSH key checks (see "Security model" in the
-# README) — know which model you're in before you rely on key restrictions.
-export HERMES_SSH_HOST="user@100.x.x.x"
+# The relay's URL. Bind it to your tailscale/private interface, not
+# 0.0.0.0 -- see install-relay.sh and the README's "Security model".
+export HERMES_RELAY_URL="http://100.x.x.x:47113/speak"
 
-# Dedicated key for this one purpose (don't reuse your main key).
-# ssh-keygen -t ed25519 -N "" -f ~/.ssh/speak_to_hermes
-export HERMES_SSH_KEY="$HOME/.ssh/speak_to_hermes"
-
-# Where hermes-speak-relay.sh landed on the Hermes host.
-export HERMES_RELAY_PATH="/usr/local/bin/hermes-speak-relay.sh"
+# Where the bearer token landed on this laptop (install-relay.sh prints
+# the token once; put it in this file, mode 600, nowhere else).
+export HERMES_TOKEN_FILE="$HOME/.config/speak-to-hermes/token"
 
 # Any edge-tts voice name. Falls back to espeak-ng if edge-tts isn't
 # installed, and to text-only notifications if neither is.
