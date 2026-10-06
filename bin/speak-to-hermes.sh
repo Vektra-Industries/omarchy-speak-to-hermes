@@ -76,7 +76,20 @@ if [ ! -s "$WAVFILE" ]; then
 fi
 
 set_state transcribing
-TEXT="$(voxtype transcribe "$WAVFILE" 2>/tmp/speak-to-hermes-transcribe.err | sed 's/[[:space:]]*$//')"
+
+# voxtype transcribe writes "Loading audio file:"/"Audio format:"/"Processing N
+# samples"/ANSI-colored INFO/WARN/ERROR log lines to STDOUT, not stderr -- a
+# plain stderr redirect never filters them (confirmed: caught real log noise
+# sent to the relay as if it were speech). Filter those known patterns out,
+# then take the last non-blank remaining line -- that's always the real
+# transcript, and comes back genuinely empty for a silent/no-speech capture.
+TEXT="$(voxtype transcribe "$WAVFILE" 2>/tmp/speak-to-hermes-transcribe.err \
+  | grep -avE '^Loading audio file:|^Audio format:|^Processing [0-9]|INFO|WARN|ERROR' \
+  | awk 'NF{last=$0} END{print last}' | sed 's/[[:space:]]*$//')"
+# voxtype transcribe writes "Loading audio file:"/"Audio format:"/"Processing N
+# samples"/ANSI-colored INFO-WARN log lines to STDOUT (not stderr -- stderr
+# redirection alone never filters them). The real transcript is always the
+# LAST non-blank stdout line; awk takes exactly that.
 rm -f "$WAVFILE"
 if [ -z "$TEXT" ]; then
   set_state idle
@@ -91,6 +104,13 @@ AUTH_HEADER="Authorization: Bearer ${TOKEN}"
 RESP="$(curl -sf -m 60 -X POST "$HERMES_RELAY_URL" \
   -H "$AUTH_HEADER" -H "Content-Type: application/json" \
   -d "$PAYLOAD" 2>/tmp/speak-to-hermes-http.err)"
+if [ -z "$RESP" ]; then
+  # one retry -- covers a relay mid-restart or a transient network blip
+  sleep 1.5
+  RESP="$(curl -sf -m 60 -X POST "$HERMES_RELAY_URL" \
+    -H "$AUTH_HEADER" -H "Content-Type: application/json" \
+    -d "$PAYLOAD" 2>>/tmp/speak-to-hermes-http.err)"
+fi
 
 if [ -z "$RESP" ]; then
   set_state idle
