@@ -22,15 +22,22 @@ if [ -z "$BIND_IP" ] || [ "$BIND_IP" = "0.0.0.0" ]; then
   exit 1
 fi
 
+echo
+echo "Optional extra layer: restrict to one specific tailnet device, verified by"
+echo "the LOCAL tailscaled daemon (not the connecting client) via 'tailscale whois'."
+echo "Find your laptop's name with: tailscale status | grep <laptop-hostname>"
+read -rp "Laptop's tailnet machine name (e.g. laptop.your-tailnet.ts.net), or blank to skip: " ALLOWED_DEVICE
+
 mkdir -p "$HOME/.config/systemd/user"
 cat > "$HOME/.config/systemd/user/hermes-speak-relay.service" << EOF
 [Unit]
-Description=Hermes speak-to-hermes HTTP relay (bind-scoped + bearer token)
+Description=Hermes speak-to-hermes HTTP relay (bind-scoped + bearer token${ALLOWED_DEVICE:+ + device check})
 After=network-online.target
 
 [Service]
 Type=simple
 Environment=HERMES_SPEAK_BIND_HOST=$BIND_IP
+${ALLOWED_DEVICE:+Environment=HERMES_SPEAK_ALLOWED_DEVICES=$ALLOWED_DEVICE}
 ExecStart=/usr/bin/python3 $HOME/.local/bin/hermes-speak-relay.py
 Restart=on-failure
 RestartSec=3

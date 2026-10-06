@@ -91,6 +91,16 @@ This project now uses plain HTTP instead, specifically to sidestep that:
 - **Interface-bound.** The relay binds to one specific IP you choose (your
   tailscale0 address, or another private interface) — `install-relay.sh`
   refuses `0.0.0.0`. Nothing outside that network can even open the port.
+- **Device identity, verified by Tailscale itself.** `install-relay.sh`
+  optionally asks for your laptop's tailnet machine name and sets
+  `HERMES_SPEAK_ALLOWED_DEVICES`. On every request the relay runs
+  `tailscale whois <source-ip>` — this asks the **local tailscaled daemon**
+  (not the connecting client) which tailnet machine actually owns that IP.
+  It's the same primitive Tailscale's own Go `tsnet`/`LocalClient.WhoIs()`
+  docs recommend for "identifying callers" — invoked here via the
+  `tailscale` CLI so the relay stays plain Python. A client can't spoof
+  this; it isn't reading anything the client sent, it's asking Tailscale's
+  own control-plane-synced peer table.
 - **Bearer token.** A 32-byte random token, generated once, required on
   every request. It lives in two places only: the relay's
   `~/.config/hermes-speak/token` and the laptop's
@@ -99,10 +109,13 @@ This project now uses plain HTTP instead, specifically to sidestep that:
   exactly one effect (one `hermes chat -Q` turn). There's no shell to
   escape to, because there isn't a shell in the first place.
 
-Two independent factors — network reachability and token possession — not
-one assumed one. If you're on a LAN instead of Tailscale, run it over
-`https` (put a reverse proxy with TLS in front) rather than bare `http`
-across anything wider than a trusted segment.
+Three independent factors — network reachability, Tailscale-verified device
+identity, and token possession — not one assumed one. Skip the device-name
+prompt in `install-relay.sh` to fall back to the first and third only
+(matches this project's original v1). If you're on a LAN instead of
+Tailscale, run it over `https` (put a reverse proxy with TLS in front)
+rather than bare `http` across anything wider than a trusted segment —
+and the `tailscale whois` layer doesn't apply off a tailnet.
 
 ## Files
 
@@ -115,4 +128,4 @@ across anything wider than a trusted segment.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). Built by [Pablo](https://github.com/PabloTheThinker).
