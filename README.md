@@ -37,6 +37,41 @@ Nothing here is a new STT or TTS stack bolted on top — it reuses whatever
 Voxtype already transcribes with, and whatever Hermes already answers with.
 The only new code is the handoff in between.
 
+## Visual feedback — a real HUD, not another notification
+
+Voxtype ships its own Quickshell-based OSD system with a cinematic,
+voice-reactive showcase style called `aegis-hud` — concentric rings, a
+waveform arc, telemetry readout, glow. Rather than reinvent that, this
+project drives the SAME daemon state file Voxtype's own OSD watches
+(`$XDG_RUNTIME_DIR/voxtype/state`: `idle`/`recording`/`transcribing`/
+`streaming`), so if you enable Voxtype's own OSD, you get that HUD for
+free for this flow too — no custom GUI toolkit, no second process to
+maintain.
+
+`osd/hermes-voice/` is a small derivative of `aegis-hud` (installed as a
+real, discoverable Voxtype style package — it shows up in `voxtype info
+styles` and inside Voxtype's own `voxtype configure` TUI, not hidden) that
+additionally watches a sibling `mode` file (`hermes`/`dictate`) this
+project's script writes, and swaps the HUD's telemetry label + accent
+color to a distinct "HERMES" badge while that flow is live. Native
+Voxtype dictation never touches the mode file, so it's unaffected and
+renders exactly like stock `aegis-hud`. See `osd/hermes-voice/README.md`.
+
+`install.sh` offers to set this up; it's entirely optional — the hotkey
+works fine with just desktop notifications if you skip it.
+
+## Transcript — see what was said, which model answered, how long it took
+
+`bin/speak-to-hermes-transcript.py` is a small GTK4 window, toggled with
+a second hotkey (`SUPER+SHIFT+j`), that renders the running JSONL log
+(`~/.local/share/speak-to-hermes/transcript.jsonl`) every exchange gets
+appended to: your text, the reply, which model answered, and how long it
+took — pulled straight from the relay's `--format stream-json` parse of
+the real `hermes chat` run, not guessed. You can also pin a specific
+model per utterance with the `HERMES_SPEAK_MODEL` env var (passed through
+to the relay's `-m`), so the transcript becomes a real record of which
+model handled which turn if you switch around.
+
 ## Install
 
 **On the Hermes host** (run this first — it prints a token and a URL you'll
@@ -65,14 +100,18 @@ Then:
    `HERMES_RELAY_URL`
 2. Put the token `install-relay.sh` printed into
    `~/.config/speak-to-hermes/token` (mode 600)
-3. Add the two lines from `hypr/bindings.lua.snippet` to
-   `~/.config/hypr/bindings.lua`
+3. Add the lines from `hypr/bindings.lua.snippet` to
+   `~/.config/hypr/bindings.lua` (one for the hotkey, one toggles the
+   transcript viewer)
 4. `hyprctl reload` — if that doesn't pick up new binds, Omarchy's Lua
    config sometimes needs `omarchy-restart-hyprctl` instead (a full
    Hyprland config re-source, not just a keyword reload)
 5. `pip install --user edge-tts` for a real voice, or `pacman -S espeak-ng`
    for a robotic fallback. Without either, you still get the text in a
    desktop notification.
+6. Install the `osd/hermes-voice` style (`install.sh` offers this) if you
+   want the cinematic HUD from "Visual feedback" above, then
+   `systemctl --user restart voxtype` to apply it.
 
 ## Security model — read this before you trust it
 
@@ -122,8 +161,11 @@ and the `tailscale whois` layer doesn't apply off a tailnet.
 - `bin/speak-to-hermes.sh` — runs on the laptop, bound to a hotkey
 - `bin/hermes-speak-relay.py` — runs on the Hermes host; the only thing the
   laptop can reach, and the only thing it can do
+- `bin/speak-to-hermes-transcript.py` — GrokBot-style transcript viewer
+- `osd/hermes-voice/` — optional Voxtype OSD style: the stock cinematic
+  `aegis-hud` HUD plus a "HERMES" mode badge
 - `config.example.sh` — copy to `~/.config/speak-to-hermes/config.sh`
-- `hypr/bindings.lua.snippet` — the two Hyprland bind lines
+- `hypr/bindings.lua.snippet` — the Hyprland bind lines (hotkey + transcript)
 - `install.sh`, `install-relay.sh` — one-shot installers for each side
 
 ## License

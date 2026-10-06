@@ -11,3 +11,7 @@ o.bind("SUPER + h", "Dictate into focused window", "voxtype record toggle")
 
 -- This project: speak, it goes to Hermes and speaks the reply back.
 o.bind("SUPER + SHIFT + h", "Speak to Hermes", "~/.local/bin/speak-to-hermes.sh")
+
+-- Toggle the GrokBot-style transcript window: every exchange, which
+-- model answered, how long it took. See bin/speak-to-hermes-transcript.py.
+o.bind("SUPER + SHIFT + j", "Speak to Hermes — transcript", "pkill -f speak-to-hermes-transcript.py || python3 ~/.local/bin/speak-to-hermes-transcript.py &")

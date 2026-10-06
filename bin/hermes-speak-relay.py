@@ -74,23 +74,49 @@ def _tailscale_peer_name(remote_ip: str) -> str | None:
         return None
 
 
-def _run_hermes(text: str) -> str:
+def _run_hermes(text: str, model: str | None = None) -> dict:
+    """Runs one turn via --format stream-json (JSONL events) instead of
+    scraping plain text -- gives the real model name, session id, and
+    timing back, not a regex guess. Returns
+    {"reply", "model", "session_id", "duration_ms"}."""
     sid = SID_FILE.read_text().strip() if SID_FILE.exists() else ""
     env = os.environ.copy()
     env["HERMES_HOME"] = env.get("HERMES_HOME", str(HOME / ".hermes"))
-    cmd = [HERMES_BIN, "chat", "-Q", "-q", text, "--source", "voxtype-dictate", "--yolo", "--reasoning", "none"]
+    cmd = [
+        HERMES_BIN, "chat", "-Q", "-q", text, "--format", "stream-json",
+        "--source", "voxtype-dictate", "--yolo", "--reasoning", "none",
+    ]
+    if model:
+        cmd += ["-m", model]
     if sid:
         cmd += ["--resume", sid]
     raw = subprocess.run(cmd, cwd=str(HOME), env=env, capture_output=True, text=True, timeout=90)
-    out = (raw.stdout or "") + ("\n" + raw.stderr if raw.stderr else "")
-    m = re.search(r"session[_ ]?id[^A-Za-z0-9]{0,3}([A-Za-z0-9_]{6,})", out)
-    if m:
+
+    result: dict = {"reply": "", "model": None, "session_id": sid or None, "duration_ms": None}
+    for line in raw.stdout.splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        try:
+            ev = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if ev.get("type") == "system" and ev.get("subtype") == "init":
+            result["model"] = ev.get("model")
+            result["session_id"] = ev.get("session_id") or result["session_id"]
+        elif ev.get("type") == "result":
+            result["reply"] = ev.get("text", "")
+            result["session_id"] = ev.get("session_id") or result["session_id"]
+            result["duration_ms"] = ev.get("duration_ms")
+
+    if result["session_id"]:
         SID_FILE.parent.mkdir(parents=True, exist_ok=True)
-        SID_FILE.write_text(m.group(1))
-    clean = "\n".join(
-        ln for ln in out.splitlines() if not ln.startswith("↻ Resumed session") and not ln.startswith("session_id")
-    )
-    return clean.strip()[-4000:] or "I heard you, but came back empty."
+        SID_FILE.write_text(result["session_id"])
+
+    if not result["reply"]:
+        result["reply"] = "I heard you, but came back empty."
+    result["reply"] = result["reply"][-4000:]
+    return result
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -129,6 +155,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             data = json.loads(self.rfile.read(length))
             text = str(data.get("text", "")).strip()
+            model = data.get("model")
+            model = str(model).strip() if model else None
         except Exception:
             self._reject(400, "bad json")
             return
@@ -136,13 +164,13 @@ class Handler(BaseHTTPRequestHandler):
             self._reject(400, "empty text")
             return
         try:
-            reply = _run_hermes(text)
+            result = _run_hermes(text, model=model)
         except subprocess.TimeoutExpired:
-            reply = "Still working on that. Try again in a moment."
+            result = {"reply": "Still working on that. Try again in a moment.", "model": None, "session_id": None, "duration_ms": None}
         except Exception as exc:  # never leak a traceback to the network
             self._reject(500, f"relay error: {type(exc).__name__}")
             return
-        body = json.dumps({"reply": reply}).encode()
+        body = json.dumps(result).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
