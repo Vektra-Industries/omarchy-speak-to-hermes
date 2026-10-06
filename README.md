@@ -11,6 +11,18 @@ Built on a real laptop + home server pair: an Omarchy ThinkPad with no GPU,
 and a separate Linux box running the actual Hermes agent, talked to over
 Tailscale.
 
+## Hotkeys at a glance
+
+| Keys | What it does |
+|------|--------------|
+| `SUPER + h` | Omarchy's normal Voxtype dictation. Types into the focused window. |
+| `SUPER + SHIFT + h` | **Speak to Hermes.** Press once to start, press again to send. The reply is spoken and shown as a notification. |
+| `SUPER + SHIFT + j` | Toggle the transcript window. |
+
+These are the defaults in `hypr/bindings.lua.snippet`; change them there. It works alongside Omarchy's dictation, not instead of it: both use the same Voxtype engine, and your normal dictation key is untouched.
+
+**AI agents:** read [`SKILL.md`](SKILL.md) for install, verify and debug steps before changing anything.
+
 ## How it works
 
 ```
