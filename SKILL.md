@@ -53,6 +53,7 @@ Rules that bite:
 | Recorded but no reply | Wrong `HERMES_RELAY_URL`, missing or wrong token, device not in `HERMES_SPEAK_ALLOWED_DEVICES`, relay not running |
 | Reply text but no sound | `edge-tts` and `espeak-ng` both missing; check the voice file and network for edge-tts |
 | Transcript includes log noise | Use the current `voxtype transcribe` handling in `speak-to-hermes.sh`; stdout must be the text only |
+| `Config section 'parakeet' could not be read` | `[parakeet]` exists without `model`. Voxtype 1.1.0 requires that key and skips the whole table, warning on every invocation. Run `bin/repair-voxtype-parakeet.sh`. Do not write a partial `[parakeet]` table (a lone `streaming = false` is already the default). |
 | 401 or 403 from relay | Token mismatch, or the Tailscale identity check rejected the device |
 
 ## Security rules (do not weaken)

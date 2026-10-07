@@ -180,6 +180,20 @@ Tailscale, run it over `https` (put a reverse proxy with TLS in front)
 rather than bare `http` across anything wider than a trusted segment —
 and the `tailscale whois` layer doesn't apply off a tailnet.
 
+## Voxtype warns about `[parakeet]`
+
+```
+WARN Config section 'parakeet' could not be read and is using defaults.
+WARN 1 config section(s) were skipped: parakeet
+```
+
+Voxtype 1.1.0 cannot read a `[parakeet]` table that has no `model` key
+(a lone `streaming = false` is the usual shape). It skips the section and
+warns on every command, including `voxtype transcribe`. That value is
+already the default. `install.sh` runs `bin/repair-voxtype-parakeet.sh`,
+which deletes only that unreadable table. A table that already sets
+`model` is left alone. Run the script yourself if you already have the warning.
+
 ## Files
 
 - `bin/speak-to-hermes.sh` — runs on the laptop, bound to a hotkey
@@ -190,6 +204,7 @@ and the `tailscale whois` layer doesn't apply off a tailnet.
   `aegis-hud` HUD plus a "HERMES" mode badge
 - `config.example.sh` — copy to `~/.config/speak-to-hermes/config.sh`
 - `hypr/bindings.lua.snippet` — the Hyprland bind lines (hotkey + transcript)
+- `bin/repair-voxtype-parakeet.sh` — drops an unreadable `[parakeet]` table (see above)
 - `install.sh`, `install-relay.sh` — one-shot installers for each side
 
 ## License

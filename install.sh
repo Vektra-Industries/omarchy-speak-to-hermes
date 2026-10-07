@@ -17,6 +17,9 @@ if ! command -v voxtype >/dev/null 2>&1; then
 fi
 
 if command -v voxtype >/dev/null 2>&1; then
+  # Voxtype 1.1.0 warns on every invocation if [parakeet] exists without
+  # model. That partial table is already the default; drop it.
+  "$HERE/bin/repair-voxtype-parakeet.sh" || true
   echo
   read -rp "Install the hermes-voice OSD style (cinematic HUD, Hermes-mode badge)? [Y/n] " OSD_ANSWER
   if [ "${OSD_ANSWER:-Y}" != "n" ] && [ "${OSD_ANSWER:-Y}" != "N" ]; then
