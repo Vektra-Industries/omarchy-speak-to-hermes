@@ -11,6 +11,12 @@ Built on a real laptop + home server pair: an Omarchy ThinkPad with no GPU,
 and a separate Linux box running the actual Hermes agent, talked to over
 Tailscale.
 
+If Hermes Desktop is open, speak there. Its own microphone and wake phrase
+are the conversation. Do not leave this hotkey installed on that same
+machine — both want the mic. `./uninstall.sh` removes the hotkey, the name
+wake, and the Voxtype output hook. It does not remove Voxtype dictation
+(`SUPER + h`) and it does not remove Hermes Desktop.
+
 ## Hotkeys at a glance
 
 | Keys | What it does |
@@ -236,6 +242,7 @@ which deletes only that unreadable table. A table that already sets
 - `hypr/bindings.lua.snippet` — the Hyprland bind lines (hotkey + transcript)
 - `bin/repair-voxtype-parakeet.sh` — drops an unreadable `[parakeet]` table (see above)
 - `install.sh`, `install-relay.sh` — one-shot installers for each side
+- `uninstall.sh` — removes the laptop hotkey, wake, and Voxtype hook. Leaves dictation and Hermes Desktop.
 
 ## License
 

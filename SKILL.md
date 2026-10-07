@@ -41,6 +41,9 @@ Rules that bite:
 3. Add the lines from `hypr/bindings.lua.snippet` to the Hyprland bindings file, then reload.
 4. `pip install --user edge-tts` for a real voice. Optionally install the HUD style and run `systemctl --user restart voxtype`.
 
+## Uninstall
+If the human wants to speak only inside Hermes Desktop, run `./uninstall.sh` on the laptop. It stops the wake and the every-screen pill, removes the hotkey, and clears the Voxtype output hook. Do not remove Voxtype itself, and do not touch Hermes Desktop voice. Do not take the microphone to prove it.
+
 ## Verify (do this before saying it works)
 - Relay: the service is active and the port is listening on the private IP.
 - Laptop: `~/.local/bin/speak-to-hermes.sh` exists and is executable; `voxtype` is running (`pgrep voxtype`).
