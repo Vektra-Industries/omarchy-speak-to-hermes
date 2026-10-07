@@ -72,6 +72,13 @@ renders exactly like stock `aegis-hud`. See `osd/hermes-voice/README.md`.
 `install.sh` offers to set this up; it's entirely optional — the hotkey
 works fine with just desktop notifications if you skip it.
 
+Voxtype's OSD is one layer, and it anchors to a single screen (usually
+the first). On a laptop plus an external monitor the glow can start on
+the panel you are not looking at, which feels like the hotkey did
+nothing. `osd/every-screen/` watches the same state file and draws a
+small pill on every output. `install.sh` enables
+`speak-to-hermes-osd.service` for that. See `osd/every-screen/README.md`.
+
 ## Top-bar voice picker
 
 Voxtype has no voice/TTS concept at all (it only does speech-to-text), so
@@ -202,6 +209,8 @@ which deletes only that unreadable table. A table that already sets
 - `bin/speak-to-hermes-transcript.py` — GrokBot-style transcript viewer
 - `osd/hermes-voice/` — optional Voxtype OSD style: the stock cinematic
   `aegis-hud` HUD plus a "HERMES" mode badge
+- `osd/every-screen/` — listening pill on every monitor (Voxtype's own OSD is one screen)
+- `systemd/speak-to-hermes-osd.service` — user unit for that pill
 - `config.example.sh` — copy to `~/.config/speak-to-hermes/config.sh`
 - `hypr/bindings.lua.snippet` — the Hyprland bind lines (hotkey + transcript)
 - `bin/repair-voxtype-parakeet.sh` — drops an unreadable `[parakeet]` table (see above)

@@ -49,12 +49,27 @@ TRANSCRIPT_FILE="$HOME/.local/share/speak-to-hermes/transcript.jsonl"
 mkdir -p "$(dirname "$STATE_FILE")" "$(dirname "$TRANSCRIPT_FILE")"
 set_state() { printf '%s' "$1" > "$STATE_FILE" 2>/dev/null || true; }
 notify() { notify-send -a "Hermes" "$1" "$2" 2>/dev/null || true; }
+# Voxtype's OSD anchors to one screen. This unit draws the same state
+# on every output. Start it if install.sh has not already.
+ensure_every_screen() {
+  local dir="$HOME/.local/share/speak-to-hermes/every-screen"
+  [ -f "$dir/shell.qml" ] || return 0
+  command -v qs >/dev/null 2>&1 || return 0
+  if systemctl --user is-active --quiet speak-to-hermes-osd.service 2>/dev/null; then
+    return 0
+  fi
+  if pgrep -f "qs -p $dir" >/dev/null 2>&1; then
+    return 0
+  fi
+  qs -p "$dir" >/dev/null 2>&1 &
+}
 
 if [ ! -f "$PIDFILE" ]; then
   # --- start recording ---
   rm -f "$WAVFILE"
   pw-record --format=s16 --rate=16000 --channels=1 "$WAVFILE" &
   echo $! > "$PIDFILE"
+  ensure_every_screen
   set_state recording
   notify "Listening…" "Press the key again when you're done."
   exit 0

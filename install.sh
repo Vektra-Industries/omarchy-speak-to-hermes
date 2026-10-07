@@ -33,6 +33,20 @@ if command -v voxtype >/dev/null 2>&1; then
   fi
 fi
 
+# Voxtype's own OSD is one layer on one screen. This pill is one layer
+# per output, so a second monitor still shows that listening started.
+if command -v qs >/dev/null 2>&1; then
+  mkdir -p "$HOME/.local/share/speak-to-hermes" "$HOME/.config/systemd/user"
+  rm -rf "$HOME/.local/share/speak-to-hermes/every-screen"
+  cp -r "$HERE/osd/every-screen" "$HOME/.local/share/speak-to-hermes/every-screen"
+  cp "$HERE/systemd/speak-to-hermes-osd.service" "$HOME/.config/systemd/user/"
+  systemctl --user daemon-reload
+  systemctl --user enable --now speak-to-hermes-osd.service
+  echo "Every-screen indicator enabled (speak-to-hermes-osd.service)."
+else
+  echo "qs not found — skipped the every-screen indicator. Install Quickshell, then re-run."
+fi
+
 if [ -d "$HOME/.config/omarchy/plugins" ] || command -v omarchy-shell >/dev/null 2>&1; then
   echo
   read -rp "Install the Hermes Voice top-bar widget (pick the reply voice, click to cycle)? [Y/n] " BAR_ANSWER

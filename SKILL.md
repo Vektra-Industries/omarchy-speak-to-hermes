@@ -49,7 +49,7 @@ Rules that bite:
 ## Debug map
 | Symptom | Likely cause |
 |---------|--------------|
-| Hotkey does nothing | Bind missing or Hyprland not reloaded; uppercase-key collision; script not executable |
+| Hotkey does nothing | Bind missing or Hyprland not reloaded; uppercase-key collision; script not executable. Also: Voxtype's own glow is one screen — if you are looking at the other monitor, the every-screen pill (`speak-to-hermes-osd.service`) is what should appear there. |
 | Recorded but no reply | Wrong `HERMES_RELAY_URL`, missing or wrong token, device not in `HERMES_SPEAK_ALLOWED_DEVICES`, relay not running |
 | Reply text but no sound | `edge-tts` and `espeak-ng` both missing; check the voice file and network for edge-tts |
 | Transcript includes log noise | Use the current `voxtype transcribe` handling in `speak-to-hermes.sh`; stdout must be the text only |

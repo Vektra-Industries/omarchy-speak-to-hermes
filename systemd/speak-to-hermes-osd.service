@@ -1,0 +1,15 @@
+[Unit]
+Description=Speak-to-Hermes indicator on every screen
+Documentation=https://github.com/Vektra-Industries/omarchy-speak-to-hermes
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/qs -p %h/.local/share/speak-to-hermes/every-screen
+Restart=on-failure
+RestartSec=3
+Environment=XDG_RUNTIME_DIR=%t
+
+[Install]
+WantedBy=graphical-session.target
