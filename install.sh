@@ -47,6 +47,25 @@ else
   echo "qs not found — skipped the every-screen indicator. Install Quickshell, then re-run."
 fi
 
+if command -v python3 >/dev/null 2>&1; then
+  echo
+  read -rp "Listen for a wake name on this machine? Audio stays here until the name is heard. [y/N] " WAKE_ANSWER
+  if [ "${WAKE_ANSWER:-n}" = "y" ] || [ "${WAKE_ANSWER:-n}" = "Y" ]; then
+    python3 -m venv "$HOME/.local/share/speak-to-hermes/wake-venv"
+    "$HOME/.local/share/speak-to-hermes/wake-venv/bin/pip" install sherpa-onnx numpy sentencepiece pypinyin
+    install -m 755 "$HERE/bin/wake-listen.py" "$HOME/.local/bin/wake-listen.py"
+    mkdir -p "$HOME/.config/speak-to-hermes" "$HOME/.config/systemd/user"
+    if [ ! -f "$HOME/.config/speak-to-hermes/wake-phrase" ]; then
+      cp "$HERE/config/wake-phrase.example" "$HOME/.config/speak-to-hermes/wake-phrase"
+      echo "Wrote ~/.config/speak-to-hermes/wake-phrase — edit the name before relying on it."
+    fi
+    cp "$HERE/systemd/speak-to-hermes-wake.service" "$HOME/.config/systemd/user/"
+    systemctl --user daemon-reload
+    systemctl --user enable --now speak-to-hermes-wake.service
+    echo "Name wake enabled. Super+Shift+k toggles it. Stop with: systemctl --user stop speak-to-hermes-wake"
+  fi
+fi
+
 if [ -d "$HOME/.config/omarchy/plugins" ] || command -v omarchy-shell >/dev/null 2>&1; then
   echo
   read -rp "Install the Hermes Voice top-bar widget (pick the reply voice, click to cycle)? [Y/n] " BAR_ANSWER

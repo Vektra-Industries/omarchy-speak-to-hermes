@@ -22,6 +22,7 @@ A second dictation hotkey for Omarchy's built-in Voxtype dictation. Voxtype's no
 |------|--------|
 | `SUPER + h` | Plain Voxtype dictation. Types into the focused window. Not part of this project; it is Voxtype's own `voxtype record toggle`. |
 | `SUPER + SHIFT + h` | **Speak to Hermes.** Toggle: press once to start recording, press again to stop and send. The reply is spoken and shown as a notification. |
+| `SUPER + SHIFT + k` | Toggle the local name wake. Off means the microphone is not listening for the name. |
 | `SUPER + SHIFT + j` | Toggle the transcript window (what was said, which model answered, how long it took). |
 
 Rules that bite:
@@ -49,7 +50,7 @@ Rules that bite:
 ## Debug map
 | Symptom | Likely cause |
 |---------|--------------|
-| Hotkey does nothing | Bind missing or Hyprland not reloaded; uppercase-key collision; script not executable. Also: Voxtype's own glow is one screen — if you are looking at the other monitor, the every-screen pill (`speak-to-hermes-osd.service`) is what should appear there. |
+| Hotkey does nothing | Bind missing or Hyprland not reloaded; uppercase-key collision; script not executable. Also: Voxtype's own glow is one screen — if you are looking at the other monitor, the every-screen pill (`speak-to-hermes-osd.service`) is what should appear there. Name wake is separate: `speak-to-hermes-wake.service`, phrase file `~/.config/speak-to-hermes/wake-phrase`. Audio before the name stays on the machine. |
 | Recorded but no reply | Wrong `HERMES_RELAY_URL`, missing or wrong token, device not in `HERMES_SPEAK_ALLOWED_DEVICES`, relay not running |
 | Reply text but no sound | `edge-tts` and `espeak-ng` both missing; check the voice file and network for edge-tts |
 | Transcript includes log noise | Use the current `voxtype transcribe` handling in `speak-to-hermes.sh`; stdout must be the text only |

@@ -1,0 +1,15 @@
+[Unit]
+Description=Speak-to-Hermes local name wake
+Documentation=https://github.com/Vektra-Industries/omarchy-speak-to-hermes
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/share/speak-to-hermes/wake-venv/bin/python %h/.local/bin/wake-listen.py
+Restart=on-failure
+RestartSec=3
+Environment=XDG_RUNTIME_DIR=%t
+
+[Install]
+WantedBy=graphical-session.target

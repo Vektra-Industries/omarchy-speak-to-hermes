@@ -64,28 +64,32 @@ ensure_every_screen() {
   qs -p "$dir" >/dev/null 2>&1 &
 }
 
-if [ ! -f "$PIDFILE" ]; then
-  # --- start recording ---
-  rm -f "$WAVFILE"
-  pw-record --format=s16 --rate=16000 --channels=1 "$WAVFILE" &
-  echo $! > "$PIDFILE"
-  ensure_every_screen
-  set_state recording
-  notify "Listening…" "Press the key again when you're done."
-  exit 0
-fi
+if [ "${1:-}" = "--from-wav" ]; then
+  WAVFILE="${2:?need a wav path}"
+else
+  if [ ! -f "$PIDFILE" ]; then
+    # --- start recording ---
+    rm -f "$WAVFILE"
+    pw-record --format=s16 --rate=16000 --channels=1 "$WAVFILE" &
+    echo $! > "$PIDFILE"
+    ensure_every_screen
+    set_state recording
+    notify "Listening…" "Press the key again when you're done."
+    exit 0
+  fi
 
-# --- stop recording + transcribe + send ---
-REC_PID="$(cat "$PIDFILE" 2>/dev/null || true)"
-rm -f "$PIDFILE"
-if [ -n "$REC_PID" ]; then
-  kill "$REC_PID" 2>/dev/null || true
-  for _ in 1 2 3 4 5 6 7 8 9 10; do
-    kill -0 "$REC_PID" 2>/dev/null || break
-    sleep 0.1
-  done
+  # --- stop recording + transcribe + send ---
+  REC_PID="$(cat "$PIDFILE" 2>/dev/null || true)"
+  rm -f "$PIDFILE"
+  if [ -n "$REC_PID" ]; then
+    kill "$REC_PID" 2>/dev/null || true
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+      kill -0 "$REC_PID" 2>/dev/null || break
+      sleep 0.1
+    done
+  fi
+  sleep 0.2
 fi
-sleep 0.2
 
 if [ ! -s "$WAVFILE" ]; then
   set_state idle

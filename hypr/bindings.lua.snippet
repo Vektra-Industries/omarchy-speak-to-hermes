@@ -15,3 +15,7 @@ o.bind("SUPER + SHIFT + h", "Speak to Hermes", "~/.local/bin/speak-to-hermes.sh"
 -- Toggle the GrokBot-style transcript window: every exchange, which
 -- model answered, how long it took. See bin/speak-to-hermes-transcript.py.
 o.bind("SUPER + SHIFT + j", "Speak to Hermes — transcript", "pkill -f speak-to-hermes-transcript.py || python3 ~/.local/bin/speak-to-hermes-transcript.py &")
+
+-- Local name wake. The microphone stays on this machine until the name
+-- in ~/.config/speak-to-hermes/wake-phrase is heard.
+o.bind("SUPER + SHIFT + k", "Toggle name wake", "systemctl --user is-active --quiet speak-to-hermes-wake && systemctl --user stop speak-to-hermes-wake || systemctl --user start speak-to-hermes-wake")

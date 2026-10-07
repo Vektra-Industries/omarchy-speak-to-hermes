@@ -79,6 +79,20 @@ nothing. `osd/every-screen/` watches the same state file and draws a
 small pill on every output. `install.sh` enables
 `speak-to-hermes-osd.service` for that. See `osd/every-screen/README.md`.
 
+## Say the name
+
+Like a suit assistant: the laptop listens for a name, and only then
+reacts. The spotter is local. Audio before the name never leaves the
+machine. After the name, the words that follow are transcribed locally
+and only that text is sent.
+
+Put one phrase per line in `~/.config/speak-to-hermes/wake-phrase`
+(the example is `hermes` / `hey hermes`). `install.sh` can enable
+`speak-to-hermes-wake.service`. A chime means it heard you. If you
+said only the name, it answers "Yes?" and waits for the command.
+Super+Shift+k toggles the ears. Stop them outright with
+`systemctl --user stop speak-to-hermes-wake`.
+
 ## Top-bar voice picker
 
 Voxtype has no voice/TTS concept at all (it only does speech-to-text), so
