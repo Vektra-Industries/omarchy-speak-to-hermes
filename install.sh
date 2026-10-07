@@ -31,6 +31,11 @@ if command -v voxtype >/dev/null 2>&1; then
     echo "Installed. Run 'systemctl --user restart voxtype' to apply (also needed after any future config change)."
     echo "See osd/hermes-voice/README.md for how it works and how to fall back to the stock style."
   fi
+  install -m 755 "$HERE/bin/voxtype-handoff.sh" "$HOME/.local/bin/voxtype-handoff.sh"
+  voxtype config set output.post_process.command "$HOME/.local/bin/voxtype-handoff.sh"
+  voxtype config set whisper.eager_processing true
+  echo "Voxtype will transcribe in the daemon and hand speak-mode text to Hermes."
+  echo "Restart to apply: systemctl --user restart voxtype"
 fi
 
 # Voxtype's own OSD is one layer on one screen. This pill is one layer

@@ -251,6 +251,17 @@ def submit(wav: Path) -> None:
     subprocess.call([bin_path, "--from-wav", str(wav)])
 
 
+def voxtype_ready() -> bool:
+    try:
+        raw = subprocess.run(
+            ["voxtype", "status"], capture_output=True, text=True, timeout=3,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    blob = (raw.stdout + raw.stderr).lower()
+    return raw.returncode == 0 and "not running" not in blob
+
+
 def on_wake(reader) -> None:
     set_state("recording", "hermes")
     chime = SHARE / "wake-chime.pcm"
@@ -258,6 +269,25 @@ def on_wake(reader) -> None:
         SHARE.mkdir(parents=True, exist_ok=True)
         chime_wav(chime)
     play_pcm(chime)
+    if voxtype_ready():
+        # The daemon already holds the model. It records and transcribes.
+        # The handoff hook sends the text. This stream is only the silence timer.
+        subprocess.call(["voxtype", "record", "start"],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        pcm = record_command(reader)
+        if speech_ms(pcm) < 350:
+            say_yes()
+            pcm = record_command(reader)
+        if speech_ms(pcm) < 200:
+            log("name only, no command")
+            subprocess.call(["voxtype", "record", "cancel"],
+                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            set_state("idle", "dictate")
+            return
+        subprocess.call(["voxtype", "record", "stop"],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        log("handed the utterance to voxtype")
+        return
     pcm = record_command(reader)
     if speech_ms(pcm) < 350:
         say_yes()

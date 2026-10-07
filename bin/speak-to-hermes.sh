@@ -44,10 +44,12 @@ WAVFILE="/tmp/speak-to-hermes-capture.wav"
 # transcribing | streaming. Writing here makes Voxtype's own OSD (if
 # enabled) render for this flow exactly like it does for native dictation.
 STATE_FILE="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/voxtype/state"
+MODE_FILE="$(dirname "$STATE_FILE")/mode"
 TRANSCRIPT_FILE="$HOME/.local/share/speak-to-hermes/transcript.jsonl"
 
 mkdir -p "$(dirname "$STATE_FILE")" "$(dirname "$TRANSCRIPT_FILE")"
 set_state() { printf '%s' "$1" > "$STATE_FILE" 2>/dev/null || true; }
+set_mode() { printf '%s' "$1" > "$MODE_FILE" 2>/dev/null || true; }
 notify() { notify-send -a "Hermes" "$1" "$2" 2>/dev/null || true; }
 # Voxtype's OSD anchors to one screen. This unit draws the same state
 # on every output. Start it if install.sh has not already.
@@ -64,55 +66,51 @@ ensure_every_screen() {
   qs -p "$dir" >/dev/null 2>&1 &
 }
 
-if [ "${1:-}" = "--from-wav" ]; then
+TEXT=""
+if [ "${1:-}" = "--from-text" ]; then
+  # Voxtype's daemon already transcribed. Do not record or transcribe again.
+  TEXT=$(cat)
+elif [ "${1:-}" = "--from-wav" ]; then
   WAVFILE="${2:?need a wav path}"
 else
-  if [ ! -f "$PIDFILE" ]; then
-    # --- start recording ---
-    rm -f "$WAVFILE"
-    pw-record --format=s16 --rate=16000 --channels=1 "$WAVFILE" &
-    echo $! > "$PIDFILE"
-    ensure_every_screen
-    set_state recording
-    notify "Listening…" "Press the key again when you're done."
-    exit 0
-  fi
-
-  # --- stop recording + transcribe + send ---
-  REC_PID="$(cat "$PIDFILE" 2>/dev/null || true)"
-  rm -f "$PIDFILE"
-  if [ -n "$REC_PID" ]; then
-    kill "$REC_PID" 2>/dev/null || true
-    for _ in 1 2 3 4 5 6 7 8 9 10; do
-      kill -0 "$REC_PID" 2>/dev/null || break
-      sleep 0.1
-    done
-  fi
-  sleep 0.2
-fi
-
-if [ ! -s "$WAVFILE" ]; then
-  set_state idle
-  notify "Didn't catch that" "No audio recorded."
+  # Direct path: the running daemon holds the model. Toggle its recorder.
+  # bin/voxtype-handoff.sh sends the text on when mode is hermes.
+  ensure_every_screen
+  set_mode hermes
+  set_state recording
+  voxtype record toggle
   exit 0
 fi
 
-set_state transcribing
+if [ -z "$TEXT" ]; then
+  if [ "${1:-}" != "--from-wav" ] && [ ! -f "$PIDFILE" ]; then
+    exit 0
+  fi
+  if [ "${1:-}" != "--from-wav" ]; then
+    REC_PID="$(cat "$PIDFILE" 2>/dev/null || true)"
+    rm -f "$PIDFILE"
+    if [ -n "$REC_PID" ]; then
+      kill "$REC_PID" 2>/dev/null || true
+      for _ in 1 2 3 4 5 6 7 8 9 10; do
+        kill -0 "$REC_PID" 2>/dev/null || break
+        sleep 0.1
+      done
+    fi
+    sleep 0.2
+  fi
 
-# voxtype transcribe writes "Loading audio file:"/"Audio format:"/"Processing N
-# samples"/ANSI-colored INFO/WARN/ERROR log lines to STDOUT, not stderr -- a
-# plain stderr redirect never filters them (confirmed: caught real log noise
-# sent to the relay as if it were speech). Filter those known patterns out,
-# then take the last non-blank remaining line -- that's always the real
-# transcript, and comes back genuinely empty for a silent/no-speech capture.
-TEXT="$(voxtype --model tiny.en -q transcribe "$WAVFILE" 2>/tmp/speak-to-hermes-transcribe.err \
-  | grep -avE '^Loading audio file:|^Audio format:|^Processing [0-9]|INFO|WARN|ERROR' \
-  | awk 'NF{last=$0} END{print last}' | sed 's/[[:space:]]*$//')"
-# voxtype transcribe writes "Loading audio file:"/"Audio format:"/"Processing N
-# samples"/ANSI-colored INFO-WARN log lines to STDOUT (not stderr -- stderr
-# redirection alone never filters them). The real transcript is always the
-# LAST non-blank stdout line; awk takes exactly that.
-rm -f "$WAVFILE"
+  if [ ! -s "$WAVFILE" ]; then
+    set_state idle
+    notify "Didn't catch that" "No audio recorded."
+    exit 0
+  fi
+
+  set_state transcribing
+  TEXT="$(voxtype --model tiny.en -q transcribe "$WAVFILE" 2>/tmp/speak-to-hermes-transcribe.err \
+    | grep -avE '^Loading audio file:|^Audio format:|^Processing [0-9]|INFO|WARN|ERROR' \
+    | awk 'NF{last=$0} END{print last}' | sed 's/[[:space:]]*$//')"
+  rm -f "$WAVFILE"
+fi
 if [ -z "$TEXT" ]; then
   set_state idle
   notify "Didn't catch that" "Transcription came back empty."
@@ -179,5 +177,6 @@ if command -v edge-tts >/dev/null 2>&1; then
 elif command -v espeak-ng >/dev/null 2>&1; then
   espeak-ng -s 170 "$REPLY" >/dev/null 2>&1
 fi
+set_mode dictate
 set_state idle
 exit 0

@@ -79,11 +79,12 @@ nothing. `osd/every-screen/` watches the same state file and draws a
 small pill on every output. `install.sh` enables
 `speak-to-hermes-osd.service` for that. See `osd/every-screen/README.md`.
 
-The speak path transcribes with `voxtype --model tiny.en`. On a
-no-GPU laptop that was 0.75s for a two-second clip, against 1.45s for
-`base.en`. The relay asks for one short spoken turn and does not open
-a tool loop. Normal dictation (`SUPER + h`) still uses whatever model
-Voxtype's daemon is set to.
+The speak path uses the running Voxtype daemon (`voxtype record`), which
+already has the model loaded, instead of starting a second transcribe
+process. `output.post_process.command` is `voxtype-handoff.sh`: normal
+dictation is typed through unchanged; speak mode sends the text and
+types nothing. `whisper.eager_processing` starts the decode while you
+are still talking.
 
 ## Say the name
 
