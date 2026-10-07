@@ -52,6 +52,7 @@ Rules that bite:
 |---------|--------------|
 | Hotkey does nothing | Bind missing or Hyprland not reloaded; uppercase-key collision; script not executable. Also: Voxtype's own glow is one screen — if you are looking at the other monitor, the every-screen pill (`speak-to-hermes-osd.service`) is what should appear there. Name wake is separate: `speak-to-hermes-wake.service`, phrase file `~/.config/speak-to-hermes/wake-phrase`. Audio before the name stays on the machine. |
 | Recorded but no reply | Wrong `HERMES_RELAY_URL`, missing or wrong token, device not in `HERMES_SPEAK_ALLOWED_DEVICES`, relay not running |
+| Reply takes many seconds | The relay was running a full tool-using agent turn. Voice turns are one short spoken reply (`--max-turns 1`, no tool catalog). Transcription for this flow uses `tiny.en`, not the daemon's larger Whisper model. |
 | Reply text but no sound | `edge-tts` and `espeak-ng` both missing; check the voice file and network for edge-tts |
 | Transcript includes log noise | Use the current `voxtype transcribe` handling in `speak-to-hermes.sh`; stdout must be the text only |
 | `Config section 'parakeet' could not be read` | `[parakeet]` exists without `model`. Voxtype 1.1.0 requires that key and skips the whole table, warning on every invocation. Run `bin/repair-voxtype-parakeet.sh`. Do not write a partial `[parakeet]` table (a lone `streaming = false` is already the default). |

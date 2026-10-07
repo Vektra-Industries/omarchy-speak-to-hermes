@@ -205,7 +205,7 @@ def record_command(proc_reader) -> bytes:
             quiet = 0
         else:
             quiet += 1
-        if loud >= 3 and quiet >= 8:
+        if loud >= 2 and quiet >= 5:
             break
     return bytes(pcm)
 

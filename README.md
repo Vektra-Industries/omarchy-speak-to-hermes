@@ -79,6 +79,12 @@ nothing. `osd/every-screen/` watches the same state file and draws a
 small pill on every output. `install.sh` enables
 `speak-to-hermes-osd.service` for that. See `osd/every-screen/README.md`.
 
+The speak path transcribes with `voxtype --model tiny.en`. On a
+no-GPU laptop that was 0.75s for a two-second clip, against 1.45s for
+`base.en`. The relay asks for one short spoken turn and does not open
+a tool loop. Normal dictation (`SUPER + h`) still uses whatever model
+Voxtype's daemon is set to.
+
 ## Say the name
 
 Like a suit assistant: the laptop listens for a name, and only then

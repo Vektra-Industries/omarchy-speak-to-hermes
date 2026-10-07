@@ -105,7 +105,7 @@ set_state transcribing
 # sent to the relay as if it were speech). Filter those known patterns out,
 # then take the last non-blank remaining line -- that's always the real
 # transcript, and comes back genuinely empty for a silent/no-speech capture.
-TEXT="$(voxtype transcribe "$WAVFILE" 2>/tmp/speak-to-hermes-transcribe.err \
+TEXT="$(voxtype --model tiny.en -q transcribe "$WAVFILE" 2>/tmp/speak-to-hermes-transcribe.err \
   | grep -avE '^Loading audio file:|^Audio format:|^Processing [0-9]|INFO|WARN|ERROR' \
   | awk 'NF{last=$0} END{print last}' | sed 's/[[:space:]]*$//')"
 # voxtype transcribe writes "Loading audio file:"/"Audio format:"/"Processing N

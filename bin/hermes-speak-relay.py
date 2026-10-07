@@ -57,40 +57,54 @@ def _load_token() -> str:
     return TOKEN_FILE.read_text().strip()
 
 
+_WHOIS_CACHE: dict[str, tuple[float, str | None]] = {}
+
+
 def _tailscale_peer_name(remote_ip: str) -> str | None:
     """Ask the LOCAL tailscaled daemon (not the client) who owns remote_ip."""
+    import time
+    now = time.monotonic()
+    cached = _WHOIS_CACHE.get(remote_ip)
+    if cached and now - cached[0] < 60:
+        return cached[1]
+    name = None
     try:
         raw = subprocess.run(
             [TAILSCALE_BIN, "whois", "--json", remote_ip],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True, text=True, timeout=2,
         )
-        if raw.returncode != 0:
-            return None
-        data = json.loads(raw.stdout)
-        name = (data.get("Node") or {}).get("Name")
-        # `tailscale whois` returns the FQDN with a trailing DNS root dot.
-        return name.rstrip(".") if name else None
+        if raw.returncode == 0:
+            data = json.loads(raw.stdout)
+            got = (data.get("Node") or {}).get("Name")
+            name = got.rstrip(".") if got else None
     except Exception:
-        return None
+        name = None
+    _WHOIS_CACHE[remote_ip] = (now, name)
+    return name
 
 
 def _run_hermes(text: str, model: str | None = None) -> dict:
-    """Runs one turn via --format stream-json (JSONL events) instead of
-    scraping plain text -- gives the real model name, session id, and
-    timing back, not a regex guess. Returns
-    {"reply", "model", "session_id", "duration_ms"}."""
+    """One short spoken turn. No tool loop: a voice reply should not
+    load the full agent tool catalog or wander into a second call.
+    """
     sid = SID_FILE.read_text().strip() if SID_FILE.exists() else ""
     env = os.environ.copy()
     env["HERMES_HOME"] = env.get("HERMES_HOME", str(HOME / ".hermes"))
+    spoken = (
+        "Voice turn. Reply in one or two short spoken sentences. "
+        "No tools, no lists, no file paths.\n\n"
+        + text
+    )
     cmd = [
-        HERMES_BIN, "chat", "-Q", "-q", text, "--format", "stream-json",
+        HERMES_BIN, "chat", "-Q", "-q", spoken, "--format", "stream-json",
         "--source", "voxtype-dictate", "--yolo", "--reasoning", "none",
+        "--max-turns", "1", "--ignore-rules", "-t", "clarify",
     ]
     if model:
         cmd += ["-m", model]
     if sid:
         cmd += ["--resume", sid]
-    raw = subprocess.run(cmd, cwd=str(HOME), env=env, capture_output=True, text=True, timeout=90)
+    raw = subprocess.run(cmd, cwd=str(HOME), env=env, capture_output=True, text=True, timeout=45)
 
     result: dict = {"reply": "", "model": None, "session_id": sid or None, "duration_ms": None}
     for line in raw.stdout.splitlines():
